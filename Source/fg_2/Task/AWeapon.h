@@ -24,7 +24,7 @@ class FG_2_API AWeapon : public AActor
 
 	// Trajectory
 	AActor* PredictTrajectory(const FVector& Location, const FVector& Velocity, int8& Counter, int8& BumpCount);
-	void DrawTrajectory(TArray<FPredictProjectilePathPointData>& PathData);
+	void DrawTrajectory(const TArray<FPredictProjectilePathPointData>& PathData);
 
 	class ULineBatchComponent* LineBatchComponent;
 	TArray<FBatchedLine> TrajectoryLines;
@@ -36,10 +36,10 @@ public:
 
 	void Fire(FRotator& CameraRotation);
 	FORCEINLINE void SetTrajectoryEnabled(bool State) { bTrajectoryEnabled = State; }
-	FORCEINLINE bool IsTrajectoryEnabled() { return bTrajectoryEnabled; }
-	FORCEINLINE bool IsBulletModeEnabled() { return bBulletMode; }
+	FORCEINLINE bool IsTrajectoryEnabled() const { return bTrajectoryEnabled; }
+	FORCEINLINE bool IsBulletModeEnabled() const { return bBulletMode; }
 	void SetBulletModeEnabled(bool State);
-	FORCEINLINE class AProjectile* GetProjectile() { return PlayerProjectile; }
+	FORCEINLINE class AProjectile* GetProjectile() const { return PlayerProjectile; }
 protected:
 	virtual void BeginPlay() override;
 

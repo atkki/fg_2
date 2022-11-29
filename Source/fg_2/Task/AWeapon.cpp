@@ -9,11 +9,9 @@
 #include "Math/UnrealMathUtility.h"
 #include "Kismet/GameplayStatics.h"
 
-// Sets default values
 AWeapon::AWeapon()
 	: TrajectoryLines{ TArray<FBatchedLine>{} }
 {
- 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
 	MeshComponent = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("WeaponMesh"));
@@ -29,70 +27,12 @@ AWeapon::AWeapon()
 	LineBatchComponent = CreateDefaultSubobject<ULineBatchComponent>(TEXT("LineBatcher"));
 }
 
-// Called when the game starts or when spawned
 void AWeapon::BeginPlay()
 {
 	Super::BeginPlay();
 	
 }
 
-AActor* AWeapon::PredictTrajectory(const FVector& Location, const FVector& Velocity, int8& Counter, int8& BumpCount)
-{
-	if (Counter > 16) return nullptr;
-
-	FPredictProjectilePathParams PredictParams{};
-	PredictParams.StartLocation = Location;
-	PredictParams.LaunchVelocity = Velocity;
-	PredictParams.SimFrequency = 32.0f;
-	PredictParams.MaxSimTime = 1.0f;
-	PredictParams.ProjectileRadius = AProjectile::Radius;
-	PredictParams.bTraceWithCollision = true;
-	PredictParams.bTraceComplex = true;
-	PredictParams.bTraceWithChannel = true;
-	PredictParams.TraceChannel = ECollisionChannel::ECC_Visibility;
-
-	FPredictProjectilePathResult PredictResult{};
-	UGameplayStatics::PredictProjectilePath(this, PredictParams, PredictResult);
-
-	if (PredictResult.HitResult.bBlockingHit == true)
-	{
-		++Counter;
-
-		DrawTrajectory(PredictResult.PathData);
-
-		AActor* NextActor = PredictTrajectory(
-			PredictResult.HitResult.ImpactPoint, 
-			FMath::GetReflectionVector(Velocity / PI, PredictResult.HitResult.ImpactNormal), // some pi magic number
-			Counter, BumpCount
-		);
-		
-		//  only in case, that bullet will bump from at least 2 obstacles(i.e.floor and box)
-		if (PredictResult.HitResult.GetActor() != NextActor)
-			++BumpCount;
-
-		return PredictResult.HitResult.GetActor();
-	}
-
-	return nullptr;
-}
-
-void AWeapon::DrawTrajectory(TArray<FPredictProjectilePathPointData>& PathData)
-{
-	if (!bTrajectoryEnabled) return;
-	for (int i{ 0 }; i < PathData.Num(); i += 2)
-	{
-		if (i + 1 < PathData.Num())
-		{
-			FVector Start = PathData[i].Location;
-			FVector End = PathData[i + 1].Location;
-			FBatchedLine Line{ Start, End, FLinearColor(0, 1, 0, 1.0), -1, 10.0, 0 };
-			TrajectoryLines.Add(Line);
-		}
-	}
-}
-
-
-// Called every frame
 void AWeapon::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
@@ -125,6 +65,61 @@ void AWeapon::Tick(float DeltaTime)
 		SetBulletModeEnabled(false);
 	}
 
+}
+
+AActor* AWeapon::PredictTrajectory(const FVector& Location, const FVector& Velocity, int8& Counter, int8& BumpCount)
+{
+	if (Counter > 16) return nullptr;
+
+	FPredictProjectilePathParams PredictParams{};
+	PredictParams.StartLocation = Location;
+	PredictParams.LaunchVelocity = Velocity;
+	PredictParams.SimFrequency = 32.0f;
+	PredictParams.MaxSimTime = 1.0f;
+	PredictParams.ProjectileRadius = AProjectile::Radius;
+	PredictParams.bTraceWithCollision = true;
+	PredictParams.bTraceComplex = true;
+	PredictParams.bTraceWithChannel = true;
+	PredictParams.TraceChannel = ECollisionChannel::ECC_Visibility;
+
+	FPredictProjectilePathResult PredictResult{};
+	UGameplayStatics::PredictProjectilePath(this, PredictParams, PredictResult);
+
+	if (PredictResult.HitResult.bBlockingHit == true)
+	{
+		++Counter;
+
+		DrawTrajectory(PredictResult.PathData);
+
+		AActor* NextActor = PredictTrajectory(
+			PredictResult.HitResult.ImpactPoint,
+			FMath::GetReflectionVector(Velocity / PI, PredictResult.HitResult.ImpactNormal), // some pi magic number
+			Counter, BumpCount
+		);
+
+		//  only in case, that bullet will bump from at least 2 obstacles(i.e.floor and box)
+		if (PredictResult.HitResult.GetActor() != NextActor)
+			++BumpCount;
+
+		return PredictResult.HitResult.GetActor();
+	}
+
+	return nullptr;
+}
+
+void AWeapon::DrawTrajectory(const TArray<FPredictProjectilePathPointData>& PathData)
+{
+	if (!bTrajectoryEnabled) return;
+	for (int i{ 0 }; i < PathData.Num(); i += 2)
+	{
+		if (i + 1 < PathData.Num())
+		{
+			FVector Start = PathData[i].Location;
+			FVector End = PathData[i + 1].Location;
+			FBatchedLine Line{ Start, End, FLinearColor(0, 1, 0, 1.0), -1, 10.0, 0 };
+			TrajectoryLines.Add(Line);
+		}
+	}
 }
 
 void AWeapon::Fire(FRotator& CameraRotation)

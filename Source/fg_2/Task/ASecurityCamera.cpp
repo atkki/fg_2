@@ -58,37 +58,6 @@ void ASecurityCamera::BeginDestroy()
 		ASecurityCamera::TargetCharacter = nullptr;
 }
 
-ATP_ThirdPersonCharacter* ASecurityCamera::CanPlayerBeTarget()
-{
-	ATP_ThirdPersonCharacter* Character = static_cast<ATP_ThirdPersonCharacter*>(UGameplayStatics::GetPlayerCharacter(this, 0));
-	if (Character && (Character->GetFollowCameraMode() == ECameraMode::CM_FPP || Character->GetFollowCameraMode() == ECameraMode::CM_BULLET))
-	{
-		APlayerController* PlayerController = UGameplayStatics::GetPlayerController(Character, 0);
-		if (FVector::Dist(Character->GetActorLocation(), GetActorLocation()) < TargetDistance)
-		{
-			FHitResult OutHit;
-			FCollisionQueryParams Params;
-			Params.bTraceComplex = true;
-			Params.AddIgnoredActor(this);
-
-			TArray<AActor*> Projectiles;
-			UGameplayStatics::GetAllActorsOfClass(GetWorld(), AProjectile::StaticClass(), Projectiles);
-			Params.AddIgnoredActors(Projectiles);
-
-			GetWorld()->LineTraceSingleByChannel(OutHit, GetActorLocation(), Character->GetActorLocation(), ECC_Pawn, Params);
-			// GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::Red, FString::Printf(TEXT("%s"), *AActor::GetDebugName(OutHit.GetActor())));
-
-			// visibility trace check
-			if (OutHit.bBlockingHit && OutHit.GetActor() == Character)
-			{
-				return Character;
-			}
-		}
-	}
-
-	return nullptr;
-}
-
 void ASecurityCamera::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
@@ -121,7 +90,7 @@ void ASecurityCamera::Tick(float DeltaTime)
 	}
 	else if (CurrentState == ECameraState::ECS_Target)
 	{
-		if (!CanPlayerBeTarget())
+		if (!CanPlayerBeTarget() || !IsValid(ASecurityCamera::TargetCharacter))
 		{
 			ASecurityCamera::TargetCharacter = nullptr;
 			CurrentState = ECameraState::ECS_Idle;
@@ -136,6 +105,36 @@ void ASecurityCamera::Tick(float DeltaTime)
 		LookRotation.Pitch = CurrentRotation.Pitch;
 		SetActorRotation(LookRotation);
 	}
+}
+
+ATP_ThirdPersonCharacter* ASecurityCamera::CanPlayerBeTarget()
+{
+	ATP_ThirdPersonCharacter* Character = static_cast<ATP_ThirdPersonCharacter*>(UGameplayStatics::GetPlayerCharacter(this, 0));
+	if (Character && (Character->GetFollowCameraMode() == ECameraMode::CM_FPP || Character->GetFollowCameraMode() == ECameraMode::CM_BULLET))
+	{
+		APlayerController* PlayerController = UGameplayStatics::GetPlayerController(Character, 0);
+		if (FVector::Dist(Character->GetActorLocation(), GetActorLocation()) < TargetDistance)
+		{
+			FHitResult OutHit;
+			FCollisionQueryParams Params;
+			Params.bTraceComplex = true;
+			Params.AddIgnoredActor(this);
+
+			TArray<AActor*> Projectiles;
+			UGameplayStatics::GetAllActorsOfClass(GetWorld(), AProjectile::StaticClass(), Projectiles);
+			Params.AddIgnoredActors(Projectiles);
+
+			GetWorld()->LineTraceSingleByChannel(OutHit, GetActorLocation(), Character->GetActorLocation(), ECC_Pawn, Params);
+
+			// visibility trace check
+			if (OutHit.bBlockingHit && OutHit.GetActor() == Character)
+			{
+				return Character;
+			}
+		}
+	}
+
+	return nullptr;
 }
 
 void ASecurityCamera::Attack()

@@ -44,6 +44,11 @@ class ATP_ThirdPersonCharacter : public ACharacter
 	FName WeaponSocket = FName("gun_socket");
 
 	class UCameraComponent* CameraBullet;
+
+	void Fire();
+	void SwitchCamera();
+	void ShowTrajectory();
+	void ZoomCamera(float Value);
 public:
 	ATP_ThirdPersonCharacter();
 
@@ -60,10 +65,5 @@ protected:
 	void MoveForward(float Value);
 	void MoveRight(float Value);
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
-private:
-	void Fire();
-	void SwitchCamera();
-	void ShowTrajectory();
-	void ZoomCamera(float Value);
 };
 

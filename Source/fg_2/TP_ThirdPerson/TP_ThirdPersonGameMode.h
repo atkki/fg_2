@@ -16,7 +16,7 @@ public:
 	ATP_ThirdPersonGameMode();
 
 	UFUNCTION(BlueprintCallable)
-	int32 GetPoints() { return Points; };
+	int32 GetPoints() const { return Points; };
 	FORCEINLINE void SetPoints(int32 Value) { Points = Value; };
 
 	void Score();
